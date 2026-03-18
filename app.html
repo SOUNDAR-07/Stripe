@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay Now</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+  <div class="page active" id="page-landing">
+    <div class="landing-card">
+
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <span class="brand-name">My SaaS App</span>
+        <span class="test-badge">TEST MODE</span>
+      </div>
+
+      <div class="heading">
+        <h1>Enter amount to pay</h1>
+        <p>Secure payment powered by Stripe</p>
+      </div>
+
+      <div class="amount-section">
+        <label class="amount-label" for="amount-input">Amount (&#8377;)</label>
+        <div class="amount-wrap">
+          <span class="currency-symbol">&#8377;</span>
+          <input
+            type="number" id="amount-input"
+            placeholder="0" min="1" max="500000"
+            inputmode="numeric" autocomplete="off"
+          />
+        </div>
+        <div class="err-msg" id="amount-err">Please enter a valid amount (min &#8377;1)</div>
+        <div class="chips">
+          <button class="chip" onclick="setAmount(100)">&#8377;100</button>
+          <button class="chip" onclick="setAmount(500)">&#8377;500</button>
+          <button class="chip" onclick="setAmount(1000)">&#8377;1,000</button>
+          <button class="chip" onclick="setAmount(2000)">&#8377;2,000</button>
+          <button class="chip" onclick="setAmount(5000)">&#8377;5,000</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="email-input">Email address</label>
+        <input type="email" id="email-input" placeholder="you@example.com" autocomplete="email"/>
+        <div class="err-msg" id="email-err">Please enter a valid email</div>
+      </div>
+
+      <div class="coupon-card" id="coupon-card">
+
+        <div class="coupon-header">
+          <div class="coupon-icon">&#127915;</div>
+          <div class="coupon-header-text">
+            <div class="coupon-header-title">Have a redeem code?</div>
+            <div class="coupon-header-sub">Enter your coupon to reduce the payment amount</div>
+          </div>
+        </div>
+
+        <div class="coupon-input-row">
+          <input
+            type="text"
+            id="coupon-input"
+            placeholder="Enter redeem code (e.g. REDEEM70)"
+            autocomplete="off"
+            maxlength="20"
+            style="text-transform:uppercase"
+          />
+          <button class="redeem-btn" id="redeem-btn" onclick="redeemCoupon()">
+            Redeem
+          </button>
+        </div>
+
+        <div class="coupon-result-strip" id="coupon-result-strip">
+          <span id="coupon-result-text"></span>
+          <button
+            class="remove-coupon"
+            id="coupon-remove-btn"
+            onclick="removeCoupon()"
+            style="display:none"
+            title="Remove coupon"
+          >&#10005;</button>
+        </div>
+
+      </div>
+
+      <div class="summary-strip" id="summary-strip">
+        <div class="summary-row">
+          <span>Original amount (100%)</span>
+          <span id="summary-original">&#8377;&#8212;</span>
+        </div>
+        <div class="summary-row redeem-row" id="summary-redeem-row" style="display:none">
+          <span>Coupon redeems (<span id="summary-redeem-pct">0</span>%)</span>
+          <span id="summary-redeemed">&#8377;0</span>
+        </div>
+        <div class="summary-row final-row" id="summary-final-row" style="display:none">
+          <span>You pay</span>
+          <span id="summary-final">&#8377;&#8212;</span>
+        </div>
+      </div>
+
+      <button class="pay-btn" onclick="goToCheckout()">
+        Proceed to Pay <span class="arrow-icon">&#8594;</span>
+      </button>
+
+      <div class="landing-footer">
+        &#128274; Secured by <strong>Stripe</strong> &nbsp;&middot;&nbsp; Test Mode
+      </div>
+
+    </div>
+  </div>
+
+
+  <div class="page" id="page-checkout">
+    <div class="checkout-card">
+
+      <div class="summary-panel">
+
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span class="brand-name">My SaaS App</span>
+          <span class="test-badge">TEST MODE</span>
+        </div>
+
+        <span class="back-link" onclick="goBack()">&#8592; Change amount</span>
+
+        <div class="order-card">
+          <div class="order-row">
+            <div>
+              <div class="order-label">Total due today</div>
+              <div style="margin-top:5px">
+                <span
+                  class="coupon-applied-tag"
+                  id="coupon-tag"
+                  style="display:none"
+                ></span>
+              </div>
+            </div>
+            <div class="order-amount" id="order-amount">&#8377;&#8212;</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="fee-box">
+          <div class="fee-title">&#128176; Breakdown</div>
+
+          <div class="fee-row">
+            <span>Original (100%)</span>
+            <span id="fb-original">&#8377;&#8212;</span>
+          </div>
+
+          <div class="fee-row redeem-fee-row" id="fb-redeem-row" style="display:none">
+            <span id="fb-redeem-pct">Coupon redeems</span>
+            <span id="fb-redeemed">&#8377;&#8212;</span>
+          </div>
+
+          <div class="fee-row pay-fee-row" id="fb-pay-row" style="display:none">
+            <span>You pay</span>
+            <span id="fb-pay">&#8377;&#8212;</span>
+          </div>
+
+          <div class="fee-divider"></div>
+
+          <div class="fee-row">
+            <span>Stripe fee (~2%)</span>
+            <span id="fb-stripe" style="color:#b45309">~&#8377;&#8212;</span>
+          </div>
+
+          <div class="fee-divider"></div>
+
+          <div class="fee-row highlight">
+            <span>Receiver gets</span>
+            <span id="fb-receiver">~&#8377;&#8212;</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="payment-panel">
+        <div id="form-area">
+          <div class="sec-title">Payment details</div>
+
+          <div id="pe-loader">
+            <div class="skeleton sk-tabs"></div>
+            <div class="skeleton sk-box"></div>
+            <div class="skeleton sk-line" style="width:55%"></div>
+            <div class="skeleton sk-line" style="width:75%"></div>
+          </div>
+
+          <div id="payment-element"></div>
+          <p id="msg"></p>
+
+          <button class="pay-btn" id="pay-btn" onclick="handlePay()" disabled>
+            <span id="btn-text">Pay <span id="btn-amount">&#8377;&#8212;</span></span>
+            <div class="spinner" id="spinner"></div>
+          </button>
+
+          <p class="secure-note">&#128274; Payments secured by Stripe</p>
+          <div class="stripe-footer">
+            <span>Powered by <strong style="color:var(--accent2)">stripe</strong></span>
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+          </div>
+        </div>
+
+        <div id="success-screen">
+          <div class="success-icon">&#9989;</div>
+          <div class="success-title">Payment Successful!</div>
+          <div class="success-sub" id="success-sub"></div>
+          <div class="receipt" id="receipt"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
